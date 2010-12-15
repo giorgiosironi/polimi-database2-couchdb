@@ -23,7 +23,46 @@
       $("#account").evently("account", app);
       $("#profile").evently("profile", app);
       $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
-      $("#items").evently("items", app);
+    //  $("#items").evently("items", app);
+    });
+    db = $.couch.db('marketing');
+
+    function loadAllMaterial() {  
+        $("div#items").empty();  
+        db.view("marketing/all", {  
+         success: function(data) {  
+          for (i in data.rows) {  
+           id = data.rows[i].id;  
+           item = data.rows[i].value;  
+           html = '<div class="document">' +  
+            '<span class="name">' + item.title + '</span> ';
+            for (j in item.tags) {
+                tag = item.tags[j];
+                html += '<a href="#" tag="' + tag + '" class="tag">' + tag + '</a>';
+            }
+            html +=
+    //        '<a href="#" class="edit">edit</a> '+  
+    //        '<a href="#" class="delete">delete</a> '+  
+            '</div>';  
+            console.log(html);
+           $("div#items").append(html);  
+          }  
+        }});  
+       }  
+
+$("div#items").click(function(event) {
+  var $tgt = $(event.target);
+  if ($tgt.is('a')) {
+     if ($tgt.hasClass("tag")) {
+         tag = $tgt.attr("tag");
+        console.log(tag);
+     }
+    }
+   });
+
+       
+    $(function() {
+        loadAllMaterial();
     });
   </script>
 </html>
