@@ -11,6 +11,8 @@
 
     <div id="profile"></div>
     <div id="items"></div>
+    <div id="tagcloud"></div>
+    <div id="sales_by_period"></div>
 
     <div id="sidebar">
       <p>Edit welcome message.</p>
@@ -35,34 +37,61 @@
            id = data.rows[i].id;  
            item = data.rows[i].value;  
            html = '<div class="document">' +  
-            '<span class="name">' + item.title + '</span> ';
+            '<span class="name">' + item.name + '</span>' +
+            '<span class="tags">';
             for (j in item.tags) {
                 tag = item.tags[j];
-                html += '<a href="#" tag="' + tag + '" class="tag">' + tag + '</a>';
+                html += '<span class="tag">' + tag + '</span>';
             }
             html +=
     //        '<a href="#" class="edit">edit</a> '+  
     //        '<a href="#" class="delete">delete</a> '+  
-            '</div>';  
-            console.log(html);
+            '</span></div>';  
            $("div#items").append(html);  
           }  
         }});  
        }  
 
-$("div#items").click(function(event) {
-  var $tgt = $(event.target);
-  if ($tgt.is('a')) {
-     if ($tgt.hasClass("tag")) {
-         tag = $tgt.attr("tag");
-        console.log(tag);
-     }
-    }
-   });
+       function loadTagCloud()
+       {
+        $("div#tagcloud").empty();  
+        db.view("marketing/tagcloud", {  
+            'group_level' : 1,
+         success: function(data) {  
+          for (i in data.rows) {  
+           tag = data.rows[i].key;
+           fontsize = data.rows[i].value * 20;  
+           html = '<span style="font-size: ' + fontsize + 'px;">' + tag + '</span>';
+           $("div#tagcloud").append(html);  
+            }  
+          }
+        });  
 
-       
+       }
+
+       function loadSalesByPeriod(group_level)
+       {
+        $("div#sales_by_period").empty();  
+        db.view("marketing/sales_by_period", {  
+            'group_level' : group_level,
+         success: function(data) {  
+          for (i in data.rows) {  
+           period = data.rows[i].key;
+           number = data.rows[i].value;
+           html = '<tr>' + 
+           '<td>' + period + '</td>' +
+           '<td>' + number + '</td>' + 
+           '</tr>';
+           $("div#sales_by_period").append(html);  
+            }  
+          },
+        });  
+       }
+
     $(function() {
         loadAllMaterial();
+        loadTagCloud();
+        loadSalesByPeriod(1);
     });
   </script>
 </html>
