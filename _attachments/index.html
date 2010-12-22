@@ -3,21 +3,61 @@
   <head>
     <title>My New CouchApp</title>
     <link rel="stylesheet" href="style/main.css" type="text/css">
+    
+    </style>
   </head>
   <body>
-    <div id="account"></div>
+    <h1>Marketing CouchApp</h1>
 
-    <h1>Generated CouchApp</h1>
+    <div id="tagcloud"></div>
 
     <div id="profile"></div>
-    <div id="items"></div>
-    <div id="tagcloud"></div>
-    <div id="sales_by_period"></div>
 
-    <div id="sidebar">
-      <p>Edit welcome message.</p>
-      <p>Ideas: You could easily turn this into a photo sharing app, or a grocery list, or a chat room.</p>
+    <div id="items">
+        <div class="items" id="published_items"></div>
+
+        <div class="items" id="retired_items"></div>
     </div>
+    <br style="clear: left;" />
+
+    <h2>All sales</h2>
+    <table class="items">
+        <thead>
+            <tr>
+                <th>Client</th>
+                <th>Amount</th>
+                <th>Date</th>
+                <th>Segment</th>
+            </tr>
+        <tbody id="sales"></tbody>
+    </table>
+
+    <h2>Sales aggregation</h2>
+    <table class="items">
+        <caption>
+            <button onclick="loadSalesByPeriod(1);">By year</button>
+            <button onclick="loadSalesByPeriod(2);">By month</button>
+            <button onclick="loadSalesByPeriod(3);">By day</button>
+        </caption>
+        <thead>
+            <tr>
+                <th>Period</th>
+                <th>Number of sales</th>
+            </tr>
+        </thead>
+        <tbody id="sales_by_period"></tbody>
+    </table>
+
+    <h2>Sales statistics</h2>
+    <table class="items">
+        <thead>
+            <tr>
+                <th>Market segment</th>
+                <th>Average sale</th>
+            </tr>
+        <tbody id="sales_segments_statistics"></tbody>
+    </table>
+
   </body>
   <script src="vendor/couchapp/loader.js"></script>
   <script type="text/javascript" charset="utf-8">
@@ -25,13 +65,18 @@
       $("#account").evently("account", app);
       $("#profile").evently("profile", app);
       $.evently.connect("#account","#profile", ["loggedIn","loggedOut"]);
-    //  $("#items").evently("items", app);
     });
     db = $.couch.db('marketing');
 
     function loadAllMaterial() {  
-        $("div#items").empty();  
-        db.view("marketing/all", {  
+        $("button.retire").live('click', function(event) {
+            var target = $(event.target);
+            var id = target.attr('document');
+            retireMaterial(id);
+        });
+        $("div#published_items").empty()
+                                .append('<h2>Published items</h2>');
+        db.view("marketing/material", {  
          success: function(data) {  
           for (i in data.rows) {  
            id = data.rows[i].id;  
@@ -46,11 +91,41 @@
             html +=
     //        '<a href="#" class="edit">edit</a> '+  
     //        '<a href="#" class="delete">delete</a> '+  
-            '</span></div>';  
-           $("div#items").append(html);  
+            '</span><button class="retire" document="' + id + '">R</button></div>';  
+           $("div#published_items").append(html);  
           }  
         }});  
        }  
+
+    function loadRetiredMaterial() {  
+        $("button.publish").live('click', function(event) {
+            var target = $(event.target);
+            var id = target.attr('document');
+            publishMaterial(id);
+        });
+        $("div#retired_items").empty()
+                              .append("<h2>Retired items</h2>");
+        db.view("marketing/retired", {  
+         success: function(data) {  
+          for (i in data.rows) {  
+           id = data.rows[i].id;  
+           item = data.rows[i].value;  
+           html = '<div class="document">' +  
+            '<span class="name">' + item.name + '</span>' +
+            '<span class="tags">';
+            for (j in item.tags) {
+                tag = item.tags[j];
+                html += '<span class="tag">' + tag + '</span>';
+            }
+            html +=
+    //        '<a href="#" class="edit">edit</a> '+  
+    //        '<a href="#" class="delete">delete</a> '+  
+            '</span><button class="publish" document="' + id + '">P</button></div>';  
+           $("div#retired_items").append(html);  
+          }  
+        }});  
+       }
+
 
        function loadTagCloud()
        {
@@ -69,29 +144,92 @@
 
        }
 
-       function loadSalesByPeriod(group_level)
+        function loadSales()
        {
-        $("div#sales_by_period").empty();  
-        db.view("marketing/sales_by_period", {  
-            'group_level' : group_level,
+        $("#sales").empty();  
+        db.view("marketing/sales", {  
          success: function(data) {  
           for (i in data.rows) {  
-           period = data.rows[i].key;
-           number = data.rows[i].value;
+           doc = data.rows[i].value;
            html = '<tr>' + 
-           '<td>' + period + '</td>' +
-           '<td>' + number + '</td>' + 
+           '<td>' + doc.client + '</td>' +
+           '<td>' + doc.amount + '</td>' +
+           '<td>' + doc.date_day + '/' + doc.date_month + '/' + doc.date_year + '</td>' +
+           '<td>' + doc.segment + '</td>' + 
            '</tr>';
-           $("div#sales_by_period").append(html);  
+           $("#sales").append(html);  
             }  
           },
         });  
        }
 
+       function loadSalesByPeriod(group_level)
+       {
+        $("#sales_by_period").empty();  
+        db.view("marketing/sales_by_period", {  
+            'group_level' : group_level,
+         success: function(data) {  
+          for (i in data.rows) {  
+           period = data.rows[i].key.reverse().join('/');
+           number = data.rows[i].value;
+           html = '<tr>' + 
+           '<td>' + period + '</td>' +
+           '<td>' + number + '</td>' + 
+           '</tr>';
+           $("#sales_by_period").append(html);  
+            }  
+          },
+        });  
+       }
+
+       function loadSalesStatistics()
+       {
+        $("#sales_segments_statistics").empty();  
+        db.view("marketing/sales_segments_statistics", {  
+            'group_level' : 1,
+         success: function(data) {  
+          for (i in data.rows) {  
+           var segment = data.rows[i].key;
+           var average = data.rows[i].value;
+           html = '<tr>' + 
+           '<td>' + segment + '</td>' +
+           '<td>' + average + '</td>' + 
+           '</tr>';
+           $("#sales_segments_statistics").append(html);  
+            }  
+          },
+        });  
+       }
+
+       function retireMaterial(id)
+       {
+        db.openDoc(id, {}, {'success': function(doc) {
+            doc.status = 'retired';
+            db.saveDoc(doc, {'success': function() {
+                // ok
+            } });
+        }});
+       }
+
+       function publishMaterial(id)
+       {
+        db.openDoc(id, {}, {'success': function(doc) {
+            doc.status = 'published';
+            db.saveDoc(doc, {'success': function() {
+                console.log('ok');
+            } });
+        }});
+       }
+
+
+
     $(function() {
         loadAllMaterial();
+        loadRetiredMaterial();
         loadTagCloud();
+        loadSales();
         loadSalesByPeriod(1);
+        loadSalesStatistics(1);
     });
   </script>
 </html>
