@@ -58,6 +58,18 @@
         <tbody id="sales_segments_statistics"></tbody>
     </table>
 
+    <form id="sale">
+        <label>Client: <input type="text" id="client" name="client"></label>
+        <label>Amount: <input type="text" id="amount" name="amount"></label>
+        <p>Date: <input type="text" id="date_day" name="date_day" size="2">/
+            <input type="text" id="date_month" name="date_month" size="2">/
+            <input type="text" id="date_year" name="date_year" size="4"></p>
+        <label>Segment: <select id="segment" name="segment">
+            <option value="end_user">End user</option>
+            <option value="corporate">Corporate</option>
+        </select></label>
+        <button id="add_sale">Add sale</button>
+    </form>
   </body>
   <script src="vendor/couchapp/loader.js"></script>
   <script type="text/javascript" charset="utf-8">
@@ -236,6 +248,31 @@
         loadSales();
         loadSalesByPeriod(1);
         loadSalesStatistics(1);
+
+        $('button#add_sale').click(function(event) {
+            var form = $('form#sale');
+            var doc = {
+                'amount' : parseInt(form.find('#amount').val()),
+                'client' : form.find('#client').val(),
+                'date_day' : parseInt(form.find('#date_day').val()),
+                'date_month' : parseInt(form.find('#date_month').val()),
+                'date_year' : parseInt(form.find('#date_year').val()),
+                'segment' : form.find('#segment').val(),
+                'type' : 'sale'
+            };
+            db.saveDoc(
+                doc,
+                {
+                    success : function() {
+                        $(':input', form).not(':button').val('');
+                        loadSales();
+                        loadSalesByPeriod(1);
+                        loadSalesStatistics(1);
+                    }
+                }
+            );
+            return false;
+        });
     });
   </script>
 </html>
