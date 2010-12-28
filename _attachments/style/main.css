@@ -24,6 +24,9 @@ table {
     }
     #sales_segments_statistics {
     }
+    form {
+        width: 450px;
+    }
 
 body {
   font:1em Helvetica, sans-serif;
