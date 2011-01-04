@@ -21,6 +21,7 @@
     <br style="clear: left;" />
 
     <h2>All sales</h2>
+    <button class="update_sales">Update sales statistics</button>
     <table class="items">
         <thead>
             <tr>
@@ -80,16 +81,16 @@
     });
     db = $.couch.db('marketing');
 
-    function loadAllMaterial() {  
         $("button.retire").live('click', function(event) {
             var target = $(event.target);
             var id = target.attr('document');
             retireMaterial(id);
         });
-        $("div#published_items").empty()
-                                .append('<h2>Published items</h2>');
+    function loadPublishedMaterial() {  
         db.view("marketing/material", {  
          success: function(data) {  
+          $("div#published_items").empty()
+                                .append('<h2>Published items</h2>');
           for (i in data.rows) {  
            id = data.rows[i].id;  
            item = data.rows[i].value;  
@@ -109,16 +110,16 @@
         }});  
        }  
 
-    function loadRetiredMaterial() {  
         $("button.publish").live('click', function(event) {
             var target = $(event.target);
             var id = target.attr('document');
             publishMaterial(id);
         });
-        $("div#retired_items").empty()
-                              .append("<h2>Retired items</h2>");
+    function loadRetiredMaterial() {  
         db.view("marketing/retired", {  
          success: function(data) {  
+          $("div#retired_items").empty()
+                              .append("<h2>Retired items</h2>");
           for (i in data.rows) {  
            id = data.rows[i].id;  
            item = data.rows[i].value;  
@@ -130,8 +131,6 @@
                 html += '<span class="tag">' + tag + '</span>';
             }
             html +=
-    //        '<a href="#" class="edit">edit</a> '+  
-    //        '<a href="#" class="delete">delete</a> '+  
             '</span><button class="publish" document="' + id + '">P</button></div>';  
            $("div#retired_items").append(html);  
           }  
@@ -175,9 +174,15 @@
         });  
        }
 
+        last_group_level = 1;
        function loadSalesByPeriod(group_level)
        {
         $("#sales_by_period").empty();  
+        if (group_level == undefined) {
+            group_level = last_group_level;
+        } else {
+            last_group_level = group_level;
+        }
         db.view("marketing/sales_by_period", {  
             'group_level' : group_level,
          success: function(data) {  
@@ -213,6 +218,12 @@
         });  
        }
 
+        $("button.update_sales").live('click', function(event) {
+            loadSales();
+            loadSalesByPeriod();
+            loadSalesStatistics();
+        });
+
        function retireMaterial(id)
        {
         db.openDoc(id, {}, {'success': function(doc) {
@@ -222,7 +233,7 @@
             } });
         }});
 
-        loadAllMaterial();
+        loadPublishedMaterial();
         loadRetiredMaterial();
        }
 
@@ -235,19 +246,21 @@
             } });
         }});
 
-        loadAllMaterial();
+        loadPublishedMaterial();
         loadRetiredMaterial();
        }
 
 
 
     $(function() {
-        loadAllMaterial();
+        loadPublishedMaterial();
+        window.setInterval(loadPublishedMaterial, 5000);
         loadRetiredMaterial();
+        window.setInterval(loadRetiredMaterial, 5000);
         loadTagCloud();
         loadSales();
         loadSalesByPeriod(1);
-        loadSalesStatistics(1);
+        loadSalesStatistics();
 
         $('button#add_sale').click(function(event) {
             var form = $('form#sale');
@@ -265,9 +278,6 @@
                 {
                     success : function() {
                         $(':input', form).not(':button').val('');
-                        loadSales();
-                        loadSalesByPeriod(1);
-                        loadSalesStatistics(1);
                     }
                 }
             );
